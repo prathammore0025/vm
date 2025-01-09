@@ -1,15 +1,41 @@
 Vagrant.configure("2") do |config|
-  config.vm.box = "ubuntu/bionic64" # Specify the box you want to use
+  # Use Ubuntu as the base box
+  config.vm.box = "ubuntu/bionic64" # Or a newer Ubuntu version if preferred
 
-  # Provisioning script to install/upgrade Guest Additions
+  # Configure VirtualBox provider
+  config.vm.provider "virtualbox" do |vb|
+    vb.memory = "2048" # Assign 2GB of RAM
+    vb.cpus = 2        # Assign 2 CPUs
+    vb.gui = true      # Enable GUI
+
+    # Set video memory to 128MB
+    vb.customize ["modifyvm", :id, "--vram", "128"]
+  end
+
+  # Install a GUI and configure the VM for auto-login
   config.vm.provision "shell", inline: <<-SHELL
+    # Update the package list
     sudo apt-get update
-    sudo apt-get install -y wget build-essential dkms linux-headers-$(uname -r)
-    
-    # Remove old Guest Additions if present
-    sudo apt-get remove -y virtualbox-guest-dkms virtualbox-guest-utils virtualbox-guest-x11 || true
 
-    # Download and install Guest Additions 7.0.22
+    # Install a lightweight desktop environment (XFCE) and additional utilities
+    sudo apt-get install -y xfce4 xfce4-goodies lightdm
+
+    # Configure LightDM as the default display manager
+    sudo systemctl enable lightdm
+
+    # Enable auto-login for the vagrant user
+    sudo bash -c 'echo "[Seat:*]" >> /etc/lightdm/lightdm.conf'
+    sudo bash -c 'echo "autologin-user=vagrant" >> /etc/lightdm/lightdm.conf'
+
+    # Allow password-based login for the vagrant user
+    echo "vagrant:vagrant" | sudo chpasswd  # Set the password for 'vagrant' user
+    sudo sed -i 's/^PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
+    sudo systemctl restart sshd
+
+    # Ensure guest additions dependencies are installed
+    sudo apt-get install -y build-essential dkms linux-headers-$(uname -r)
+
+    # Install VirtualBox Guest Additions
     wget https://download.virtualbox.org/virtualbox/7.0.22/VBoxGuestAdditions_7.0.22.iso -O /tmp/VBoxGuestAdditions.iso
     sudo mkdir -p /mnt/vbox
     sudo mount /tmp/VBoxGuestAdditions.iso /mnt/vbox
@@ -18,6 +44,6 @@ Vagrant.configure("2") do |config|
     rm -rf /tmp/VBoxGuestAdditions.iso /mnt/vbox
   SHELL
 
-  # Ensure synced folders are properly configured
+  # Configure synced folders (optional)
   config.vm.synced_folder ".", "/vagrant", type: "virtualbox"
 end
