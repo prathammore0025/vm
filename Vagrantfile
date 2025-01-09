@@ -1,6 +1,6 @@
 Vagrant.configure("2") do |config|
   # Use Ubuntu as the base box
-  config.vm.box = "ubuntu/bionic64" # Or a newer Ubuntu version if preferred
+  config.vm.box = "ubuntu/bionic64"
 
   # Configure VirtualBox provider
   config.vm.provider "virtualbox" do |vb|
@@ -17,22 +17,26 @@ Vagrant.configure("2") do |config|
     # Update the package list
     sudo apt-get update
 
-    # Install a lightweight desktop environment (XFCE) and additional utilities
-    sudo apt-get install -y xfce4 xfce4-goodies lightdm
+    # Install XFCE desktop environment and LightDM
+    sudo apt-get install -y xfce4 xfce4-goodies lightdm xorg
 
     # Configure LightDM as the default display manager
     sudo systemctl enable lightdm
 
-    # Enable auto-login for the vagrant user
+    # Enable auto-login for the 'vagrant' user
     sudo bash -c 'echo "[Seat:*]" >> /etc/lightdm/lightdm.conf'
     sudo bash -c 'echo "autologin-user=vagrant" >> /etc/lightdm/lightdm.conf'
 
-    # Allow password-based login for the vagrant user
+    # Set up permissions for X server
+    sudo usermod -a -G video vagrant
+    sudo chmod u+s /usr/lib/xorg/Xorg
+
+    # Ensure password-based login is allowed
     echo "vagrant:vagrant" | sudo chpasswd  # Set the password for 'vagrant' user
     sudo sed -i 's/^PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
     sudo systemctl restart sshd
 
-    # Ensure guest additions dependencies are installed
+    # Install dependencies for VirtualBox Guest Additions
     sudo apt-get install -y build-essential dkms linux-headers-$(uname -r)
 
     # Install VirtualBox Guest Additions
@@ -44,6 +48,6 @@ Vagrant.configure("2") do |config|
     rm -rf /tmp/VBoxGuestAdditions.iso /mnt/vbox
   SHELL
 
-  # Configure synced folders (optional)
+  # Optional: Shared folder
   config.vm.synced_folder ".", "/vagrant", type: "virtualbox"
 end
