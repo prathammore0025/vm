@@ -10,6 +10,9 @@ Vagrant.configure("2") do |config|
 
     # Set video memory to 128MB
     vb.customize ["modifyvm", :id, "--vram", "128"]
+
+    # Set the default machine folder to avoid permission issues
+    vb.customize ["setproperty", "machinefolder", "C:/Users/admin/VirtualBox VMs"]
   end
 
   # Provision the VM to set up the GUI and auto-login
