@@ -25,10 +25,5 @@ Vagrant.configure("2") do |config|
     sudo sed -i 's/^PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
     sudo systemctl restart sshd
 
-    # Ensure VirtualBox Guest Additions dependencies are installed
-    sudo apt-get install -y build-essential dkms linux-headers-$(uname -r)
   SHELL
-
-  # Configure synced folders (optional)
-  config.vm.synced_folder ".", "/vagrant", type: "virtualbox"
 end
