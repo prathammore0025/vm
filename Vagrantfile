@@ -12,15 +12,15 @@ Vagrant.configure("2") do |config|
     vb.customize ["modifyvm", :id, "--vram", "128"]
   end
 
-  # Provision the VM to set up the GUI and auto-login
+  # Provision the VM to set up auto-login and start XFCE
   config.vm.provision "shell", inline: <<-SHELL
     # Update the package list
     sudo apt-get update
 
     # Install XFCE desktop environment and LightDM
-    sudo apt-get install -y xfce4 xfce4-goodies lightdm
+    sudo apt-get install -y xfce4 xfce4-goodies lightdm lightdm-gtk-greeter
 
-    # Configure auto-login in LightDM for the vagrant user
+    # Set up LightDM for automatic login
     sudo mkdir -p /etc/lightdm/lightdm.conf.d
     echo "[Seat:*]
 autologin-user=vagrant
@@ -28,14 +28,16 @@ autologin-user-timeout=0
 user-session=xfce
 greeter-session=lightdm-gtk-greeter" | sudo tee /etc/lightdm/lightdm.conf.d/50-myconfig.conf
 
-    # Ensure password-based SSH login is enabled
-    echo "vagrant:vagrant" | sudo chpasswd  # Set the password for 'vagrant' user
+    # Ensure the vagrant user has an XFCE session
+    echo "startxfce4" | sudo tee /home/vagrant/.xsession
+    sudo chown vagrant:vagrant /home/vagrant/.xsession
+    sudo chmod +x /home/vagrant/.xsession
+
+    # Set the password for the vagrant user
+    echo "vagrant:vagrant" | sudo chpasswd
+
+    # Ensure SSH is configured
     sudo sed -i 's/^PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config
     sudo systemctl restart sshd
-
-    # Add `startxfce4` to .bashrc for the vagrant user
-    echo "if [[ \$(tty) == /dev/tty1 ]]; then
-  startxfce4
-fi" >> /home/vagrant/.bashrc
   SHELL
 end
